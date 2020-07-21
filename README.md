@@ -2,7 +2,7 @@
 ShinyApp:
 This App is divided into separate tabs with the goal to check survey excel as thoroughly as possible.
 User can upload their own VELMU-excel table into the app. 
-The shape of this table is strict as the final GIS database only accepts 
+The shape of this table is strict as the final GIS database only accepts specific form.
   
 Tabs:
 
