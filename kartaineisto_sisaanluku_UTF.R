@@ -12,6 +12,8 @@ library(sp)
 vesikasvirajat <- read_csv("C:/Users/Rasmusbo/Documents/R_shiny/2020VELMU_readxl_tarkistus/Read_surveydata_in/external_data/VesikasviSummary.csv")
 hertta_lajit_excel <- read_xlsx(path = "C:/Users/Rasmusbo/Documents/R_shiny/2020VELMU_readxl_tarkistus/Read_surveydata_in/external_data/lajinimet_hertta.xlsx")
 hertan_lajinimet <- as.list(hertta_lajit_excel)[[1]] # The äs didn't want to import correctly, thus the extra steps.
+options(shiny.maxRequestSize=100*1024^2,
+        digits = 3)
 
 # Define UI for data upload app ----
 ui = fluidPage(
@@ -102,8 +104,8 @@ ui = fluidPage(
                                wellPanel(verbatimTextOutput(outputId = "kat_variables")),
                                
                                h4("Yhteenvedot jatkuvista muuttujista:"),
-                               p(paste("Kustakin sarakkeesta yhteenveto, jossa minimi- ja maksimiarvot kyseisestä sarakkeesta",
-                                       "NA viittaa tyhjään soluun. Mikäli numeerinen sarake on 'character'-muodossa,",
+                               p(paste("Kustakin sarakkeesta yhteenveto, jossa minimi- ja maksimiarvot kyseisestä sarakkeesta.",
+                                       "NA viittaa tyhjään soluun, ja kertoo tyhjien arvojen määrän. Mikäli numeerinen sarake on 'character'-muodossa,",
                                        "tämä viittaa siihen, että kyseisessä sarakkeessa on teksti-muodossa olevia tietoja myös Excelissä.",
                                        "Esimerkiksi ',' ja '.' käyttö desimaaleina sekaisin aiheuttaa tämän.")),
                                p(paste("Mikäli sarake on tyhjä, R lukee sarakkeen loogisena TRUE/FALSE-muodossa",
