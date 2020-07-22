@@ -102,12 +102,27 @@ ui = fluidPage(
              tabPanel("Lajidata",
                       fluidRow(
                         column(6,
-                               "Lista lajeista, jotka eivät ole yhteensopivia LajiGISsin kanssa:",
-                               wellPanel(DTOutput(outputId = "lajitasmaavyys")),
-                               "Lajihavainnot ja havaintojen määrä taulukossa:",
-                               wellPanel(DTOutput(outputId = "lajilista"))),
+                               # Lajihavaintojen tarkistuksia ----
+                               h4("Lajihavainnot ja havaintojen määrä taulukossa:"),
+                               p(paste("Kiinnitä erityistä huomiota lajeihin, joita on 1-2 kpl.", 
+                                       "sillä näissä yksittäisten virheellisten syöttöjen mahdollisuus on suurin.")),
+                               wellPanel(DTOutput(outputId = "lajilista")),
+                               
+                               
+                               h4("Lista lajeista, jotka eivät ole yhteensopivia LajiGISsin kanssa:"),
+                               p("Mikäli alla olevassa listassa on lajeja: "),
+                               p(paste("A) Lajinimeä ei löydy lomakkeen lajilistasta. Lomakkeen lista ei ole täysin yhtäläinen LajiGISsin lajilistan ",
+                                       "kanssa, joten laji saattaa löytyä tietokannasta, vaikka sitä ei Excelissä olisikaan.",
+                                       "Tällöin kartoitustaulukossa lajihavainnon kohdalla tulisi lukea 'Lajia ei listassa'",
+                                       "ja lajihavainto kommenteissa. Nämä tarkastetaan sisäänsyötön yhteydessä.")),
+                               p(paste("B) Lajin kirjoitusasu on jotenkin väärin. Tarkasta erityisesti ISOT ja pienet kirjaimet",
+                                       "sp.-päätteen kirjoitusasu, ylimääräiset välilyönnit (myös lajin lopussa) ja yleiset typot.")),
+                               wellPanel(DTOutput(outputId = "lajitasmaavyys"))
+                               ),
+                        
                         column(6,
-                               "Lajistokartta",
+                               h4("Lajistokartta"),
+                               p("Kartasta voit tarkistaa eri lajihavaintojen sijainnit."),
                                wellPanel(leafletOutput(outputId = "lajikartta")),
                                wellPanel(selectInput(inputId = "filt_laji",
                                                      label = "Suodata kartalla näytettävät lajit:",
@@ -115,8 +130,16 @@ ui = fluidPage(
                         ),
                       fluidRow(
                         column(12,
-                               "Lista lajeista, joiden syvyys on paljon tai vähän",
-                               wellPanel())
+                               h4("Outlier-lajit"),
+                               p(paste("Alla olevassa listassa on lajihavainnot, jotka ovat syvemmällä tai matalammalla kuin 98%",
+                                       "kaikista aiemmista saman lajin havainnoista. Tämä lista perustuu siis 'todennäköisyyksiin',",
+                                       "ja sen lajihavainnoissa ei välttämättä ole mitään kummallista.",
+                                       "Tarkoituksena on kuitenkin kiinnittää huomiota havaintoihin, jotka ovat selkeästi liian",
+                                       "syvällä tai matalalla suhteessa edellisten vuosien havaintoihin.",
+                                       "Tällaisia voisivat olla esimerkiksi Fucus 10 metrissä, tai Sphacelaria 0.2 metrissä.",
+                                       "Mikäli näitä löytyy, kannattaa lajihavainnon konteksti aina tarkistaa excelistä.")),
+                               wellPanel(DTOutput(outputId = "outlier_spec")),
+                               wellPanel(DTOutput(outputId = "taulukko")))
                       )
                       ),
              # Maps ----
@@ -157,7 +180,8 @@ server <- function(input, output, session) {
     req(input$file1)
     df_to_mod <- read_xlsx(input$file1$datapath, 
               skip = input$tyhj_rivien_maara,
-              .name_repair = "universal")
+              .name_repair = "universal",
+              guess_max = 5000)
     
     aineisto <- df_to_mod %>%
       select(kohteen.nro = 1,
@@ -329,6 +353,34 @@ server <- function(input, output, session) {
   # Filter only kokoomalinjat, without the kartoitusruudut
   kokoomalinjat <- reactive({kart_df() %>%
       filter(kohteen.taso == 62)})
+  
+  # Dataframe to check outlier species based on quantile percentages:
+  outlier_species <- reactive({
+    
+    combine_summary <- linjat_filtered_63() %>%
+      left_join(vesikasvirajat, by = c("lajihavainto"  = "Laji"))
+    
+    outliers <- combine_summary %>%
+      mutate(Outlier = case_when(arviointiruudun.syvyys < min_1pros ~ "Matala",
+                                 arviointiruudun.syvyys > max_1pros ~ "Syva",
+                                 TRUE ~ "NA")) %>%
+      select(kohteen.nro,
+             kohteen.nimi,
+             sukelluslinjan.kartoittaja,
+             kohteen.nimi,
+             kartoituspvm,
+             lajihavainto,
+             arviointiruudun.syvyys,
+             lajin.peittavyys,
+             Outlier,
+             Lajin_90_pros_esiintyvyysrajat,
+             min_1pros,
+             max_1pros) %>%
+      filter(Outlier != "NA")
+    
+    return(outliers)
+    
+  })
 
   # List and count of species
   lajilista <- reactive({
@@ -338,9 +390,12 @@ server <- function(input, output, session) {
       tally(sort = T)
   })
   
-  #lajisto_kartalle <- reactive({
-  ##  kart:
-  #})
+  lajisto_kartalle <- reactive({
+    linjat_filtered_63() %>%
+      filter(lajihavainto %in% input$filt_laji) %>%
+      mutate(ruudun.koordinaatti.E = as.numeric(ruudun.koordinaatti.E), 
+             ruudun.koordinaatti.N = as.numeric(ruudun.koordinaatti.N))
+  })
   
   # General overview of the kokoomalinjat
   output$yleiskatsaus_kokoomalinjat <- renderDT({kokoomalinjat() %>%
@@ -395,6 +450,10 @@ server <- function(input, output, session) {
     
   })
   
+  output$outlier_spec <- renderDT({
+    outlier_species()
+  })
+  
   # Boxplot to check ruudun syvyydet:
   output$ruudunSyvyysBoxPlot <- renderPlotly({
     linjat_filtered_63() %>%
@@ -433,11 +492,14 @@ server <- function(input, output, session) {
     addMarkers(~loppukoordinaatti.E,
                ~loppukoordinaatti.N,
                popup = ~as.character("Loppu"),
-               label = ~as.character(kohteen.nimi)) %>%
-    setView(23, 63, zoom = 5)
+               label = ~as.character(kohteen.nimi)) 
   })  
   
-  output$lajikartta <- renderLeaflet({
+  output$lajikartta <- renderLeaflet({leaflet(lajisto_kartalle()) %>%
+      addTiles() %>%
+      addCircleMarkers(~ruudun.koordinaatti.E, 
+                       ~ruudun.koordinaatti.N,
+                       popup = ~as.character(kohteen.nimi)) 
     
   })
 }
