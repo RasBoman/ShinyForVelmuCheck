@@ -94,8 +94,23 @@ ui = fluidPage(
                       fluidRow(
                         column(2, 'sidebar'),
                         column(10,
-                               "Uniikit arvot kategorisista muuttujista:",
-                               wellPanel(DTOutput(outputId = "kat_variables")))
+                               h4("Uniikit arvot kategorisista muuttujista:"),
+                               p(paste("Kuhunkin listaan on kerätty uniikit arvot kyseisestä sarakkeesta.",
+                                       "Koodien osalta tarkasta tarvittaessa excelistä mihin kyseinen numero viittaa.",
+                                       "Taulukossa on kaikki rivit (kokooma & kartoituspisteet), joten sarakkeista löytyy myös tyhjiä (NA) arvoja.",
+                                       "Näistä ei tarvitse välittää.")),
+                               wellPanel(verbatimTextOutput(outputId = "kat_variables")),
+                               
+                               h4("Yhteenvedot jatkuvista muuttujista:"),
+                               p(paste("Kustakin sarakkeesta yhteenveto, jossa minimi- ja maksimiarvot kyseisestä sarakkeesta",
+                                       "NA viittaa tyhjään soluun. Mikäli numeerinen sarake on 'character'-muodossa,",
+                                       "tämä viittaa siihen, että kyseisessä sarakkeessa on teksti-muodossa olevia tietoja myös Excelissä.",
+                                       "Esimerkiksi ',' ja '.' käyttö desimaaleina sekaisin aiheuttaa tämän.")),
+                               p(paste("Mikäli sarake on tyhjä, R lukee sarakkeen loogisena TRUE/FALSE-muodossa",
+                                       "Loogisia sarakkeita on esimerkiksi harvinaisempien pohjanlaatujen kohdalla.",
+                                       "Näihin ei tarvitse kiinnittää sen enempää huomiota.")),
+                               p(paste("Taulukon tärkeimpänä tarkoituksena on tarkistaa, että min ja max-arvot ovat kohtuullisen rajoissa")),
+                               wellPanel(verbatimTextOutput(outputId = "summary_var")))
                         )
                       ),
              # Tab to check on species data ----
@@ -414,7 +429,7 @@ server <- function(input, output, session) {
   })
   
   # Unique values from categorical variables
-  output$kat_variables <- renderDT({
+  output$kat_variables <- renderPrint({
     
     cat_var <- kart_df() %>%
       select(kohteen.taso,
@@ -434,8 +449,36 @@ server <- function(input, output, session) {
              lajihavainnon.laatu,
              hanke.ID)
     
-    map(cat_var, unique) %>%
-      map(as.data.frame)
+    cate_vari <- map(cat_var, unique) 
+    print(cate_vari)
+    
+  })
+  
+  output$summary_var <- renderPrint({
+    
+    summ_var <- kart_df() %>%
+      select(alkukoordinaatti.N,
+             alkukoordinaatti.E,
+             loppukoordinaatti.N,
+             loppukoordinaatti.E,
+             ruudun.koordinaatti.N,
+             ruudun.koordinaatti.E,
+             kartoituspvm,
+             tuulen.voimakkuus,
+             sukelluslinjan.pituus,
+             sukelluslinjan.kompassisuunta,
+             sukelluslinjan.alkusyvyys,
+             sukelluslinjan.loppusyvyys,
+             sukelluslinjan.syvyyden.korjaus,
+             arviointiruudun.syvyys,
+             arviointiruudun.etaisyys,
+             90:109, # Pohjanlaatudata)
+             lajin.peittavyys,
+             lajin.lukumaara,
+             lajin.korkeus)
+    
+    summ_vari <- map(summ_var, summary)
+    print(summ_vari)
   })
   
   # Lajisto 
