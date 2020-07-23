@@ -13,7 +13,7 @@ vesikasvirajat <- read_csv("C:/Users/Rasmusbo/Documents/R_shiny/2020VELMU_readxl
 hertta_lajit_excel <- read_xlsx(path = "C:/Users/Rasmusbo/Documents/R_shiny/2020VELMU_readxl_tarkistus/Read_surveydata_in/external_data/lajinimet_hertta.xlsx")
 hertan_lajinimet <- as.list(hertta_lajit_excel)[[1]] # The äs didn't want to import correctly, thus the extra steps.
 options(shiny.maxRequestSize=100*1024^2,
-        digits = 3)
+        digits = 6)
 
 # Define UI for data upload app ----
 ui = fluidPage(
@@ -67,7 +67,8 @@ ui = fluidPage(
                           
                           # Output: Data file ----
                           
-                          leafletOutput(outputId = "kokoomalinjaMap"),
+                          leafletOutput(outputId = "kokoomalinjaMap",
+                                        height = "600px"),
                           tags$hr(),
                           h2("Kokoomalinjojen yleiskatsaus"),
                           DTOutput(outputId = "yleiskatsaus_kokoomalinjat")
@@ -140,7 +141,8 @@ ui = fluidPage(
                         column(6,
                                h4("Lajistokartta"),
                                p("Kartasta voit tarkistaa eri lajihavaintojen sijainnit."),
-                               wellPanel(leafletOutput(outputId = "lajikartta")),
+                               wellPanel(leafletOutput(outputId = "lajikartta",
+                                                       height = "600px")),
                                wellPanel(selectInput(inputId = "filt_laji",
                                                      label = "Suodata kartalla näytettävät lajit:",
                                                      choices = character())))
@@ -155,9 +157,9 @@ ui = fluidPage(
                                        "syvällä tai matalalla suhteessa edellisten vuosien havaintoihin.",
                                        "Tällaisia voisivat olla esimerkiksi Fucus 10 metrissä, tai Sphacelaria 0.2 metrissä.",
                                        "Mikäli näitä löytyy, kannattaa lajihavainnon konteksti aina tarkistaa excelistä.")),
-                               wellPanel(DTOutput(outputId = "outlier_spec")),
-                               wellPanel(DTOutput(outputId = "taulukko")))
-                      )
+                               wellPanel(DTOutput(outputId = "outlier_spec"))
+                               )
+                        )
                       ),
              # Maps ----
              tabPanel("Kartat",
@@ -169,6 +171,16 @@ ui = fluidPage(
                                                      choices = character()))),
                         column(10,
                                h2("Linjat kartalla"))
+                        )
+                      ),
+             # Whole table -----
+             tabPanel("Koko taulukko",
+                      fluidRow(
+                        column(12,
+                               h2("Koko taulukko"),
+                               wellPanel(DTOutput(outputId = "taulukko")
+                                         )
+                               )
                         )
                       )
              )
@@ -544,7 +556,9 @@ server <- function(input, output, session) {
       addTiles() %>%
       addCircleMarkers(~ruudun.koordinaatti.E, 
                        ~ruudun.koordinaatti.N,
-                       popup = ~as.character(kohteen.nimi)) 
+                       popup = paste("Kohteen nimi:", lajisto_kartalle()$kohteen.nimi, "<br>",
+                                     "Kartoittaja:", lajisto_kartalle()$sukelluslinjan.kartoittaja, "<br>",
+                                     "Pisteen syvyys", lajisto_kartalle()$ruudun.syvyys)) 
     
   })
 }
