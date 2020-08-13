@@ -34,18 +34,16 @@ ui = fluidPage(
                           p(paste("Voit myös drag&drop taulukon yllä olevaan kenttään. Huomioithan, että LajiGIS-yhteensopivassa",
                           "taulukossa on 5 tyhjää riviä, eli otsikot on rivillä 6 ja aineisto alkaa riviltä 7.")),
                           
-                          # Horizontal line ----
                           tags$hr(),
                           
                           # Input: Select quotes ----
                           numericInput(inputId = "tyhj_rivien_maara",
-                                       label = "Tyhjien rivien m??r? taulukon yl?reunassa:",
+                                       label = p("Tyhjien rivien määrä taulukon yläreunassa:"),
                                        value = 5,
                                        min = 0,
                                        max = 10
                                        ),
                         
-                          # Horizontal line ----
                           tags$hr(),
                           
                           paste("Tämä ohjelma on tarkoitettu VELMU-muodossa olevan kartoitusaineiston tarkistamiseen.",
@@ -61,7 +59,7 @@ ui = fluidPage(
                         
                         
                         
-                        # Main panel for displaying outputs ----
+                        # Main panel for displaying maps and tab data ----
                         mainPanel(
                           h2("Linjat kartalla"),
                           
@@ -76,19 +74,31 @@ ui = fluidPage(
                         )
                       ),
              
-             # EDA kuvaajat ----
+             # Kuvaajat ----
              tabPanel("Kuvaajat",
                       
                       sidebarLayout(
                         
-                        sidebarPanel(checkboxInput(inputId = "kartoittajaVaritys",
-                                                   label = "Erottele kartoittajan mukaan",
-                                                   value = T),
-                                     tags$hr()),
+                        sidebarPanel(h4("Poikkeavuuksien etsintä kuvaajien avulla"),
+                                     tags$hr(),
+                                     paste("Tältä välilehdeltä on tarkoitus poimia selkeät virheet. Näitä saattavat olla",
+                                           "virheet mittayksikössä (cm vs. m) tai esimerkiksi lyöntivirheistä johtuvat",
+                                           "ylimääräiset nollat.")),
                         mainPanel(tags$hr(),
-                                  plotlyOutput(outputId = "ruudunSyvyysBoxPlot"),
-                                  plotlyOutput(outputId = "ruudunSyvyysHist"),
-                                  plotlyOutput(outputId = "etaisyysLinjallaPlot"))
+                                  wellPanel(plotlyOutput(outputId = "ruudunSyvyysBoxPlot")),
+                                  wellPanel(plotlyOutput(outputId = "ruudunSyvyysHist")),
+                                  tags$hr(),
+                                  wellPanel(plotlyOutput(outputId = "etaisyysLinjallaPlot")),
+                                  tags$hr(),
+                                  wellPanel(plotlyOutput(outputId = "lajinKorkeusBoxPlot")),
+                                  tags$hr(),
+                                  wellPanel(plotlyOutput(outputId = "lajinPeittavyysBoxPlot")),
+                                  tags$hr(),
+                                  wellPanel(plotlyOutput(outputId = "secchiSyvyysBoxPlot")),
+                                  tags$hr(),
+                                  wellPanel(plotlyOutput(outputId = "syvyydenKorjausBoxPlot")),
+                                  tags$hr(),
+                                  wellPanel(plotlyOutput(outputId = "vedenLampotilaBoxPlot")))
                         )
                       ),
              
@@ -97,14 +107,14 @@ ui = fluidPage(
                       fluidRow(
                         column(2, 'sidebar'),
                         column(10,
-                               h4("Uniikit arvot kategorisista muuttujista:"),
+                               h3("Uniikit arvot kategorisista muuttujista:"),
                                p(paste("Kuhunkin listaan on kerätty uniikit arvot kyseisestä sarakkeesta.",
                                        "Koodien osalta tarkasta tarvittaessa excelistä mihin kyseinen numero viittaa.",
                                        "Taulukossa on kaikki rivit (kokooma & kartoituspisteet), joten sarakkeista löytyy myös tyhjiä (NA) arvoja.",
                                        "Näistä ei tarvitse välittää.")),
                                wellPanel(verbatimTextOutput(outputId = "kat_variables")),
                                
-                               h4("Yhteenvedot jatkuvista muuttujista:"),
+                               h3("Yhteenvedot jatkuvista muuttujista"),
                                p(paste("Kustakin sarakkeesta yhteenveto, jossa minimi- ja maksimiarvot kyseisestä sarakkeesta.",
                                        "NA viittaa tyhjään soluun, ja kertoo tyhjien arvojen määrän. Mikäli numeerinen sarake on 'character'-muodossa,",
                                        "tämä viittaa siihen, että kyseisessä sarakkeessa on teksti-muodossa olevia tietoja myös Excelissä.",
@@ -112,8 +122,12 @@ ui = fluidPage(
                                p(paste("Mikäli sarake on tyhjä, R lukee sarakkeen loogisena TRUE/FALSE-muodossa",
                                        "Loogisia sarakkeita on esimerkiksi harvinaisempien pohjanlaatujen kohdalla.",
                                        "Näihin ei tarvitse kiinnittää sen enempää huomiota.")),
-                               p(paste("Taulukon tärkeimpänä tarkoituksena on tarkistaa, että min ja max-arvot ovat kohtuullisen rajoissa")),
-                               wellPanel(verbatimTextOutput(outputId = "summary_var")))
+                               h4("Kokoomalinjat"),
+                               p(paste("Kokoomalinjojen tiedoissa ei tulisi olla tyhjiä arvoja.")),
+                               wellPanel(verbatimTextOutput(outputId = "summary_var")),
+                               h4("Arviointiruudut"),
+                               p(paste("Arviointiruutujen osalta tyhjiä arvoja löytyy ainakin pohjanlaaduista.")),
+                               wellPanel(verbatimTextOutput(outputId = "summary_ruudut")))
                         )
                       ),
              # Tab to check on species data ----
@@ -153,7 +167,7 @@ ui = fluidPage(
                                p(paste("Alla olevassa listassa on lajihavainnot, jotka ovat syvemmällä tai matalammalla kuin 98%",
                                        "kaikista aiemmista saman lajin havainnoista. Tämä lista perustuu siis 'todennäköisyyksiin',",
                                        "ja sen lajihavainnoissa ei välttämättä ole mitään kummallista.",
-                                       "Tarkoituksena on kuitenkin kiinnittää huomiota havaintoihin, jotka ovat selkeästi liian",
+                                       "Tarkoituksena on kuitenkin kiinnittää huomiota havaintoihin, jotka ovat",
                                        "syvällä tai matalalla suhteessa edellisten vuosien havaintoihin.",
                                        "Tällaisia voisivat olla esimerkiksi Fucus 10 metrissä, tai Sphacelaria 0.2 metrissä.",
                                        "Mikäli näitä löytyy, kannattaa lajihavainnon konteksti aina tarkistaa excelistä.")),
@@ -170,7 +184,8 @@ ui = fluidPage(
                                                      label = "Kartoittaja:",
                                                      choices = character()))),
                         column(10,
-                               h2("Linjat kartalla"))
+                               h2("Linjat kartalla"),
+                               wellPanel(leafletOutput(outputId = "linjakartta")))
                         )
                       ),
              # Whole table -----
@@ -185,6 +200,7 @@ ui = fluidPage(
                       )
              )
   )
+
 
 
 
@@ -206,11 +222,22 @@ server <- function(input, output, session) {
     # and uploads a file, head of that data file by default,
     # or all rows if selected, will be shown.
     
-    req(input$file1)
-    df_to_mod <- read_xlsx(input$file1$datapath, 
-              skip = input$tyhj_rivien_maara,
-              .name_repair = "universal",
-              guess_max = 5000)
+    #if (!is.null(input$file1)){
+    #  read.csv(inFile$datapath, header=input$header, sep=input$sep, 
+    #           quote=input$quote)
+    
+    #req(input$file1)
+    if (!is.null(input$file1)){
+      df_to_mod <- read_xlsx(input$file1$datapath,
+                             skip = input$tyhj_rivien_maara,
+                             .name_repair = "universal",
+                             guess_max = 5000)
+    }
+    else {
+      df_to_mod <- read_xlsx("C:/Users/Rasmusbo/Documents/R_shiny/Testi_data/Testilinjat_nonames.xlsx",
+                             skip = 5,
+                             .name_repair = "universal")
+    }
     
     aineisto <- df_to_mod %>%
       select(kohteen.nro = 1,
@@ -221,8 +248,8 @@ server <- function(input, output, session) {
              alkukoordinaatti.E = 6,
              loppukoordinaatti.N = 7,
              loppukoordinaatti.E = 8,
-             ruudun.koordinaatti.N = 9,
-             ruudun.koordinaatti.E = 10,
+             ruudun.koordinaatti.N = as.numeric(9),
+             ruudun.koordinaatti.E = as.numeric(10),
              EI_TIETOA = 11, #
              EI_TIETOA2 =12, #
              pisteen.id = 13,
@@ -368,7 +395,7 @@ server <- function(input, output, session) {
              
              hanke.ID = 148,
              
-             149:157)
+             149:157) 
     
     return(aineisto)
     
@@ -382,6 +409,20 @@ server <- function(input, output, session) {
   # Filter only kokoomalinjat, without the kartoitusruudut
   kokoomalinjat <- reactive({kart_df() %>%
       filter(kohteen.taso == 62)})
+  
+  linjatiedot_kartalle <- reactive({
+    linjat_filtered_63() %>%
+      select(kohteen.nimi,
+             sukelluslinjan.kartoittaja,
+             ruudun.koordinaatti.N,
+             ruudun.koordinaatti.E,
+             arviointiruudun.syvyys,
+             lajihavainto,
+             90:109) %>%
+      group_by(across(c(-lajihavainto))) %>%
+      summarise(lajisto = toString(lajihavainto)) %>%
+      ungroup()
+  })
   
   # Dataframe to check outlier species based on quantile percentages:
   outlier_species <- reactive({
@@ -439,7 +480,8 @@ server <- function(input, output, session) {
 
   # Koko taulukko suodattamista ym varten
   output$taulukko <- renderDT({
-    kart_df()
+    #kart_df()
+    linjatiedot_kartalle()
   })
   
   # Unique values from categorical variables
@@ -468,31 +510,43 @@ server <- function(input, output, session) {
     
   })
   
+  output$summary_ruudut <- renderPrint({
+    
+    summ_ruudut <- linjat_filtered_63() %>%
+      select(ruudun.koordinaatti.N,
+             ruudun.koordinaatti.E,
+             kartoituspvm,
+             tuulen.voimakkuus,
+             arviointiruudun.syvyys,
+             arviointiruudun.etaisyys,
+             90:109,
+             lajin.peittavyys,
+             lajin.lukumaara,
+             lajin.korkeus)
+    
+    summ_ruudut_displ <- map(summ_ruudut, summary)
+    print(summ_ruudut_displ)
+    
+  })
+  
   output$summary_var <- renderPrint({
     
-    summ_var <- kart_df() %>%
+    summ_var <- kokoomalinjat() %>%
       select(alkukoordinaatti.N,
              alkukoordinaatti.E,
              loppukoordinaatti.N,
              loppukoordinaatti.E,
-             ruudun.koordinaatti.N,
-             ruudun.koordinaatti.E,
              kartoituspvm,
              tuulen.voimakkuus,
              sukelluslinjan.pituus,
              sukelluslinjan.kompassisuunta,
              sukelluslinjan.alkusyvyys,
              sukelluslinjan.loppusyvyys,
-             sukelluslinjan.syvyyden.korjaus,
-             arviointiruudun.syvyys,
-             arviointiruudun.etaisyys,
-             90:109, # Pohjanlaatudata)
-             lajin.peittavyys,
-             lajin.lukumaara,
-             lajin.korkeus)
+             sukelluslinjan.syvyyden.korjaus)
     
     summ_vari <- map(summ_var, summary)
     print(summ_vari)
+    
   })
   
   # Lajisto 
@@ -500,13 +554,14 @@ server <- function(input, output, session) {
     lajilista()
   })
   
+  # Tarkastetaan tasmaako kaikki lajit tietokannan lajilistaan
   output$lajitasmaavyys <- renderDT({
     kart_df() %>%
       filter(!lajihavainto %in% hertan_lajinimet & !is.na(lajihavainto)) %>%
       select(kohteen.nro, kohteen.nimi, sukelluslinjan.kartoittaja, lajihavainto)
-    
   })
   
+  # Datatable outlier-lajistosta, jotka raja-arvojen yli
   output$outlier_spec <- renderDT({
     outlier_species()
   })
@@ -526,9 +581,9 @@ server <- function(input, output, session) {
       plot_ly(x = ~arviointiruudun.syvyys,
               type = "histogram") %>%
       layout(title = "Ruudun syvyys",
-             xaxis = list(title = "Pisteiden määrä"),
-             yaxis = list(title = "Ruudun syvyys"))
-  })
+             xaxis = list(title = "Ruudun syvyys"),
+             yaxis = list(title = "Pisteiden määrä"))
+    })
     
   output$etaisyysLinjallaPlot <- renderPlotly({
     kart_df() %>%
@@ -536,20 +591,71 @@ server <- function(input, output, session) {
               color = ~sukelluslinjan.kartoittaja,
               hoverinfo = "text",
               text = ~paste("Kohteen nimi: ", kohteen.nimi),
-              type = "box") 
+              type = "box") %>%
+    layout(title = "Etäisyys linjalla",
+           xaxis = list(title = "Kartoittaja"),
+           yaxis = list(title = "Pisteiden etäisyys linjalla"))
   })
   
-  # Kartat
+  output$lajinPeittavyysBoxPlot <- renderPlotly({
+    linjat_filtered_63() %>%
+      plot_ly(y = ~lajin.peittavyys,
+              hoverinfo = "text",
+              text = ~paste("</br> Lajihavainto:", lajihavainto,
+                            "</br> Kohteen nimi:", kohteen.nimi),
+              type = "box") %>%
+    layout(title = "Lajien peittävyydet",
+           yaxis = list(title = "Lajien peittävyys")) 
+  })
+  
+# lajinKorkeusBoxPlot
+  output$lajinKorkeusBoxPlot <- renderPlotly({
+  linjat_filtered_63() %>%
+    plot_ly(y = ~lajin.korkeus,
+            hoverinfo = "text",
+            text = ~paste("</br> Lajihavainto:", lajihavainto,
+                          "</br> Kohteen nimi:", kohteen.nimi), 
+            type = "box") %>%
+    layout(title = "Lajien korkeudet",
+           yaxis = list(title = "Lajien korkeus (cm)")) 
+})
+
+  output$secchiSyvyysBoxPlot <- renderPlotly({
+  linjat_filtered_63() %>%
+    plot_ly(y = ~secchi.syvyys,
+            hoverinfo = "text",
+            text = ~paste("Kohteen nimi:", kohteen.nimi),
+            type = "box") %>%
+    layout(title = "Secchi-syvyydet")
+  })
+
+  output$syvyydenKorjausBoxPlot <- renderPlotly({
+  linjat_filtered_63() %>%
+    plot_ly(y = ~sukelluslinjan.syvyyden.korjaus,
+            hoverinfo = "text",
+            text = ~paste("Kohteen nimi:", kohteen.nimi),
+            type = "box") %>%
+    layout(title = "Syvyyden korjaus metreissä")
+})
+
+  output$vedenLampotilaBoxPlot <- renderPlotly({
+  linjat_filtered_63() %>%
+    plot_ly(y = ~veden.lampotila,
+            hoverinfo = ~"text",
+            text = ~paste("Kohteen nimi:", kohteen.nimi),
+            type="box") %>%
+    layout(title = "Veden lampötila")
+})
+
+# Kartat
   output$kokoomalinjaMap <- renderLeaflet({leaflet(kokoomalinjat()) %>%
     addTiles() %>%
-    addAwesomeMarkers(~alkukoordinaatti.E, 
-                      ~alkukoordinaatti.N,
-                      #icon = "arrow-down-circle",
-                      popup = ~as.character(kohteen.nimi)) %>%
+    addMarkers(~alkukoordinaatti.E,
+               ~alkukoordinaatti.N,
+               label = ~as.character(paste(kohteen.nimi, "0 m koordinaatti"))) %>%
     addMarkers(~loppukoordinaatti.E,
                ~loppukoordinaatti.N,
-               popup = ~as.character("Loppu"),
-               label = ~as.character(kohteen.nimi)) 
+               label = ~as.character(paste(kohteen.nimi, "100 m koordinaatti")))
   })  
   
   output$lajikartta <- renderLeaflet({leaflet(lajisto_kartalle()) %>%
@@ -558,11 +664,27 @@ server <- function(input, output, session) {
                        ~ruudun.koordinaatti.N,
                        popup = paste("Kohteen nimi:", lajisto_kartalle()$kohteen.nimi, "<br>",
                                      "Kartoittaja:", lajisto_kartalle()$sukelluslinjan.kartoittaja, "<br>",
-                                     "Pisteen syvyys", lajisto_kartalle()$ruudun.syvyys)) 
-    
+                                     "Pisteen syvyys", lajisto_kartalle()$arviointiruudun.syvyys),
+                       color = "coral4",
+                       radius = 7,
+                       opacity = 0.7,
+                       fillOpacity = 0.7) 
   })
+  
+  output$linjakartta <- renderLeaflet({leaflet(linjatiedot_kartalle()) %>%
+      addTiles() %>%
+      addCircleMarkers(~as.numeric(ruudun.koordinaatti.E),
+                       ~as.numeric(ruudun.koordinaatti.N),
+                       popup = paste("Kartoittaja:", linjatiedot_kartalle()$sukelluslinjan.kartoittaja, "<br>", 
+                                     "Ruudun syvyys:", linjatiedot_kartalle()$arviointiruudun.syvyys, "<br>",
+                                     "Lajisto:" , linjatiedot_kartalle()$lajisto)
+                       )
+    })
+
 }
 
+
 # Run the app ----
+
 shinyApp(ui = ui, server = server)
 
